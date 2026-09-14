@@ -1,0 +1,38 @@
+name: Build KDMapper
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        platform: [x64]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v1.1
+
+    - name: Restore NuGet packages
+      run: nuget restore kdmapper.sln
+
+    - name: Build
+      run: msbuild kdmapper.sln /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} /p:WarningLevel=2
+
+    - name: Upload Build Artifacts
+      if: success()
+      uses: actions/upload-artifact@v3
+      with:
+        name: kdmapper-${{ matrix.configuration }}-${{ matrix.platform }}
+        path: |
+          **/bin/${{ matrix.platform }}/${{ matrix.configuration }}/**
+          **/lib/${{ matrix.platform }}/${{ matrix.configuration }}/**
+        retention-days: 30
